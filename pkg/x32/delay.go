@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	TOTAL_BEATS = 3
-	CHAN_OUT    = 1
+	TOTAL_beats = 3
 	delayOSCStr = "/fx/%d/par/02 %d"
 )
 
@@ -22,30 +21,30 @@ var (
 	cacheClean  = time.Second * 30
 )
 
-type Beats []int64
+type beats []int64
 
-func (b Beats) Len() int           { return len(b) }
-func (b Beats) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
-func (b Beats) Less(i, j int) bool { return b[i] < b[j] }
+func (b beats) Len() int           { return len(b) }
+func (b beats) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
+func (b beats) Less(i, j int) bool { return b[i] < b[j] }
 
-type BeatCache struct {
+type beatCache struct {
 	ch *cache.Cache
 }
 
-func NewBeatCache() *BeatCache {
-	return &BeatCache{
+func newBeatCache() *beatCache {
+	return &beatCache{
 		ch: cache.New(beatTimeout, cacheClean),
 	}
 }
 
-func (b *BeatCache) AddTick(nt uint8, ts int64) int {
+func (b *beatCache) addTick(nt uint8, ts int64) int {
 	key := strconv.FormatInt(int64(nt), 10) + "-" + strconv.FormatInt(ts, 10)
 	b.ch.SetDefault(key, ts)
 	return b.ch.ItemCount()
 }
 
-func (b *BeatCache) GetTicks() []int64 {
-	tk := make(Beats, b.ch.ItemCount())
+func (b *beatCache) getTicks() []int64 {
+	tk := make(beats, b.ch.ItemCount())
 	cnt := 0
 	for _, t := range b.ch.Items() {
 		tk[cnt] = t.Object.(int64)
@@ -55,44 +54,53 @@ func (b *BeatCache) GetTicks() []int64 {
 	return tk
 }
 
-func (b *BeatCache) Flush() {
+func (b *beatCache) flush() {
 	b.ch.Flush()
 }
 
+// BeatHandler collects noteOn until a tempo can be calculated
 type BeatHandler struct {
-	bc       *BeatCache
+	bc       *beatCache
 	fxChan   int
 	cb       core.SendMidi
 	overMidi bool
 }
 
+// NewBeatHandler returns BeatHandler
 func NewBeatHandler(cb core.SendMidi, fxChan int, overMidi bool) *BeatHandler {
 	return &BeatHandler{
-		bc:       NewBeatCache(),
+		bc:       newBeatCache(),
 		fxChan:   fxChan,
 		cb:       cb,
 		overMidi: overMidi,
 	}
 }
 
+// HandleNote processes incoming notes to get tempo
 func (b *BeatHandler) HandleNote(nt core.Note) {
-	cnt := b.bc.AddTick(nt.Key, nt.Time/1000)
-	log.Debug().Interface("note", nt).Int("count", cnt).Msg("handle note beat")
-	if cnt > TOTAL_BEATS {
-		log.Debug().Msg("got beats, averaging")
+	// Only listen for NoteOn
+	if nt.State != core.NoteOn {
+		return
+	}
+	cnt := b.bc.addTick(nt.Key, nt.Time/1000)
+	log.Debug().Interface("note", nt).Int("count", cnt).Msg("handling note")
+	if cnt > TOTAL_beats {
+		log.Debug().Int("count", cnt).Msg("got notes to calculate average")
 		b.processBeats()
 	}
 }
 
 func (b *BeatHandler) processBeats() {
-	tm := avg(b.bc.GetTicks())
-	b.bc.Flush()
-	log.Debug().Int64("avg", tm).Msgf("calculated avg")
-	msg := X32Sysex{
-		data:     []byte(fmt.Sprintf(delayOSCStr, b.fxChan, tm)),
-		overMidi: b.overMidi,
-	}
-	log.Debug().Str("msg", msg.String()).Msg("sending message")
+	tm := avg(b.bc.getTicks())
+	log.Debug().Int64("delay", tm).Msg("calculated delay average")
+	b.bc.flush()
+
+	oscCmd := fmt.Sprintf(delayOSCStr, b.fxChan, tm)
+	msg := NewX32Sysex([]byte(oscCmd), b.overMidi)
+	log.Debug().
+		Str("osc_cmd", oscCmd).
+		Msg("sending message")
+
 	b.cb.Send(msg)
 }
 
@@ -101,10 +109,7 @@ func avg(tks []int64) int64 {
 	for i, tk := range tks {
 		if i > 0 {
 			sum += tk - tks[i-1]
-			log.Debug().Msgf("tick diff: %d", tk-tks[i-1])
 		}
 	}
-	log.Debug().Msgf("avg sum: %d, cnt: %d", sum, len(tks)-1)
-
 	return sum / int64(len(tks)-1)
 }

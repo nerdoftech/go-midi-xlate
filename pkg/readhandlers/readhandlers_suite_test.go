@@ -3,12 +3,11 @@ package readhandlers
 import (
 	"testing"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"gitlab.com/gomidi/midi"
 	"gitlab.com/gomidi/midi/testdrv"
 	"gitlab.com/gomidi/midi/writer"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var (
@@ -39,6 +38,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).Should(BeNil())
 
 	midiWr = writer.New(midiOut)
+	midiWr.ConsolidateNotes(false)
 })
 
 var _ = AfterSuite(func() {

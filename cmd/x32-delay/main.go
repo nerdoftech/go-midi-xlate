@@ -4,24 +4,15 @@ import (
 	"flag"
 	"os"
 
-	"github.com/nerdoftech/go-midi-xlate/pkg/outputs"
-
 	"github.com/nerdoftech/go-midi-xlate/pkg/cmd"
-
 	"github.com/nerdoftech/go-midi-xlate/pkg/core"
+	"github.com/nerdoftech/go-midi-xlate/pkg/outputs"
 	"github.com/nerdoftech/go-midi-xlate/pkg/readhandlers"
 	"github.com/nerdoftech/go-midi-xlate/pkg/x32"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"gitlab.com/gomidi/midi"
 )
-
-type fakeOut struct{}
-
-func (f fakeOut) Send(msg midi.Message) {
-	log.Debug().Str("msg", msg.String()).Msg("faked message sent")
-}
 
 var (
 	flgLogLvl    = flag.String("log", "info", "sets the log level")
@@ -63,10 +54,9 @@ func main() {
 	mOut := outputs.NewMidiOut(out)
 
 	beatHdr := x32.NewBeatHandler(mOut, *flgFxChan, true)
-	ntReader.AddHandler(43, beatHdr)
-	ntReader.Start()
+	ntReader.AddHandler(uint8(*flgDelayNote), beatHdr)
 
-	err = readhandlers.StartReaderListen(in, ntReader.GetMidiReader())
+	err = readhandlers.StartReaderListen(in, ntReader.GetMidiReaders()...)
 	cmd.CheckFatalErr("could not get reader to listen", err)
 
 	cmd.WaitForSignal()
