@@ -35,7 +35,7 @@ Listing the ports to get the index number:
 % x32-delay -list
 In ports:
   0 - Network In1
-  1 - USB MIDI
+  1 - USB Midi
 Out ports:
   0 - Network In1
   1 - USB Midi
@@ -49,6 +49,6 @@ Running the program:
 
 % x32-delay -in 0 -out 1 -ch 2 -fxc 2 -note 36
 10:51PM INF Input port: Network Air1
-10:51PM INF Output port: Network Out
+10:51PM INF Output port: USB Midi
 
 ```
