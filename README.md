@@ -4,7 +4,7 @@ This project contains a series of modules and programs for translating MIDI mess
 
 ## Apps
 
-###x32-delay
+### x32-delay
 
 This program will take a sequence of MIDI "note-on" messages from a source such as ableton at the respective tempo to calulate the delay time. Then it will send to a Behringer X32 mixing console (via MIDI port only) a Sysex message that will set the delay time of the `stereo delay` effect. Output is 
 
