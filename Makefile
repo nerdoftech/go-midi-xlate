@@ -10,7 +10,7 @@ test:
 build:
 	pwd
 	mkdir -vp $(MAC_DIR)
-	GOARCH=amd64 GOOS=darwin go build -o $(MAC_DIR)$(X32_BIN) $(X32_SRC)
+	env GOARCH=amd64 GOOS=darwin go build -o $(MAC_DIR)$(X32_BIN)-macos-64bit $(X32_SRC)
 
 clean:
 	rm -vrf build

@@ -6,9 +6,11 @@ This project contains a series of modules and programs for translating MIDI mess
 
 ### x32-delay
 
-This program will take a sequence of MIDI "note-on" messages from a source such as ableton at the respective tempo to calulate the delay time. Then it will send to a Behringer X32 mixing console (via MIDI port only) a Sysex message that will set the delay time of the `stereo delay` effect. Output is 
+This program will take a sequence of MIDI "note-on" messages from a click track source such as ableton at the respective tempo to calulate the delay time. Then it will send to a Behringer X32 mixing console (via MIDI port only) a Sysex message that will set the delay time of the `stereo delay` effect. 
 
-__Note:__ this program is only available for 64-bit Intel based MacOS computers.
+It takes 4 note-on messages at the begining of the song to calculate the delay time. Typically for a 4/4 time signature, you would send the note-on messages on the quarter notes for one measure. More than 4 will not help, and 8 beats will only make it send the delay time to the X32 twice.
+
+__Note:__ This program is only available for 64-bit Intel based MacOS computers. If you would like to see more
 
 Options:
 ```text
